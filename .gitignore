@@ -1,0 +1,33 @@
+# Prepared dataset artifacts (large, regenerable)
+data/**/*.bin
+data/**/tokenizer.json
+data/**/vocab.json
+data/**/merges.txt
+data/**/*.model
+data/**/meta.pkl
+
+# Run output
+runs/
+checkpoints/
+*.pt
+*.safetensors
+wandb/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.eggs/
+build/
+dist/
+.pytest_cache/
+
+# Reference material (PDFs, papers) — keep out of the repo
+*.pdf
+
+# Editor / OS cruft
+.idea/
+.vscode/
+*.swp
+.DS_Store

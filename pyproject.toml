@@ -1,0 +1,37 @@
+# polaris — pure-Python deps only.
+#
+# IMPORTANT: torch / torchvision / torchaudio are intentionally NOT listed
+# here. The ROCm container (robertrosenbusch/rocm6_gfx803_comfyui:5.7) ships
+# torch 2.3.0a0 built for gfx803, and that build is the only one that works
+# on this hardware. `pip install torch` here would replace it with a generic
+# build and break everything. See env/container-run.md.
+
+[project]
+name = "polaris"
+version = "0.0.0"
+description = "MoE vs. dense FFN study on gfx803 (RX 480)."
+requires-python = ">=3.10"
+dependencies = [
+    "numpy<2.0",      # torch 2.3 predates the NumPy 2 ABI.
+    "tqdm",
+    "matplotlib",
+    # BPE tokenizer trainer — pick one and pin it.
+    # "sentencepiece",   # verified to install + import in the container.
+    # "tokenizers",      # verified to install + import in the container.
+    # TODO(human): both install + import inside the gfx803 container;
+    # pick on API ergonomics, not install behavior. Pin the version you choose.
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+# Uncomment if you decide to log to Weights & Biases.
+# wandb = ["wandb"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["polaris*"]
