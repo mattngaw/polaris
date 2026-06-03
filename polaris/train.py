@@ -55,5 +55,77 @@ pieces you write yourself are:
 #              batches.
 # TODO(human): checkpoint save/load.
 
+import os
+import pickle
+from typing import Literal
+
+import numpy as np
+import torch
+import torch.nn.functional as F
+
+from .config import Config, load_config
+from .model import GPTModel
+
+DATA_DIR = "data/shakespeare"
+PICKLE_PATH = DATA_DIR + "/meta.pkl"
+CONFIG_PATH = "experiments/configs/dense.yaml"
+
+
+def get_batch(config: Config, split: Literal["train", "val"]):
+    if split == "train":
+        data = np.memmap(os.path.join(DATA_DIR, "train.bin"), dtype="uint16", mode="r")
+    elif split == "val":
+        data = np.memmap(os.path.join(DATA_DIR, "val.bin"), dtype="uint16", mode="r")
+    idxs = torch.randint(0, len(data) - config.max_seq_len, (config.batch_size,))
+    x = torch.stack(
+        [
+            torch.from_numpy(data[idx : idx + config.max_seq_len].astype(np.int64))
+            for idx in idxs
+        ]
+    )
+    y = torch.stack(
+        [
+            torch.from_numpy(
+                data[idx + 1 : idx + 1 + config.max_seq_len].astype(np.int64)
+            )
+            for idx in idxs
+        ]
+    )
+    x = x.pin_memory().to(config.device, non_blocking=True)
+    y = y.pin_memory().to(config.device, non_blocking=True)
+    return x, y
+
+
 if __name__ == "__main__":
-    raise NotImplementedError("TODO(human): wire up the entry point.")
+    with open(PICKLE_PATH, "rb") as f:
+        meta = pickle.load(f)
+
+    overrides = {}
+    if meta.get("vocab_size"):
+        overrides["vocab_size"] = meta.get("vocab_size")
+
+    config = load_config(CONFIG_PATH, overrides)
+
+    torch.manual_seed(config.seed)
+
+    model = GPTModel(config).to(config.device)
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
+
+    model.train()
+
+    for it in range(config.max_iters):
+        x, y = get_batch(config, "train")
+        logits, aux = model(x)
+        # todo fold aux
+        aux = [a for a in aux if a is not None]
+
+        loss = F.cross_entropy(logits.view(-1, config.vocab_size), y.view(-1))
+        loss = loss + config.aux_loss_weight * sum(aux)
+
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
+
+        if it % 20 == 0:
+            print(f"iter {it} loss: {loss.item()}")

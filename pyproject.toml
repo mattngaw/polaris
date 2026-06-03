@@ -13,6 +13,7 @@ description = "MoE vs. dense FFN study on gfx803 (RX 480)."
 requires-python = ">=3.10"
 dependencies = [
     "numpy<2.0",      # torch 2.3 predates the NumPy 2 ABI.
+    "pyyaml",         # config files; already shipped in the image (6.0).
     "tqdm",
     "matplotlib",
     # BPE tokenizer trainer — pick one and pin it.

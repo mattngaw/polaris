@@ -14,12 +14,23 @@ ffn_type` branches in `train.py`.
 # TODO(human): heads-up — ROCm version matters here. The project is on
 #              5.7 because 6.x has a gfx803 fp32 GEMM bug that would
 #              silently break this layer. See KNOWN_GOTCHAS.md.
-# TODO(human): implement the dense FFN module:
-#              Linear(C, H) -> activation -> Linear(H, C), where H is set
-#              by the config field `ffn_hidden`. Match the active-param
-#              budget of the MoE arm you want to compare against.
-# TODO(human): decide activation (GELU is the obvious default; matching it
-#              between the dense baseline and the MoE experts keeps the
-#              comparison clean).
 # TODO(human): if your FFN interface returns a tuple (out, aux), return
 #              aux=None here so the training loop is uniform.
+
+import torch.nn as nn
+from torch import Tensor
+
+from polaris.ffn.base import FeedForward
+
+
+class DenseLayer(FeedForward):
+    def __init__(self, cfg):
+        super().__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(cfg.d_model, cfg.ffn_hidden),
+            nn.GELU(),
+            nn.Linear(cfg.ffn_hidden, cfg.d_model),
+        )
+
+    def forward(self, x) -> tuple[Tensor, None]:
+        return self.layers(x), None

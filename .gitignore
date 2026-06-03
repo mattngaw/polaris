@@ -1,10 +1,17 @@
-# Prepared dataset artifacts (large, regenerable)
+# Prepared dataset artifacts (large / regenerable — track only the
+# prepare_*.py scripts and data/README.md, never the generated data).
+# (.gitignore has no inline comments, so descriptions stay on their own lines.)
+#   *.bin       tokenized streams (train.bin / val.bin)
+#   *.pkl       meta.pkl (vocab_size, stoi/itos)
+#   input.txt   raw downloaded source text
+#   tokenizer.json / vocab.json / merges.txt / *.model   BPE artifacts (TinyStories)
 data/**/*.bin
+data/**/*.pkl
+data/**/input.txt
 data/**/tokenizer.json
 data/**/vocab.json
 data/**/merges.txt
 data/**/*.model
-data/**/meta.pkl
 
 # Run output
 runs/

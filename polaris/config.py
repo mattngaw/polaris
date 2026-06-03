@@ -34,3 +34,85 @@ Config fields to define:
 #              overridden.
 # TODO(human): add a `validate()` step that fails loud on incoherent combos
 #              (e.g. ffn_type == "dense" but n_experts > 1).
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Literal
+
+import yaml
+
+
+@dataclass
+class Config:
+    # model config
+    vocab_size: int
+    n_layer: int
+    d_model: int
+    max_seq_len: int
+    dropout: float
+
+    # attn config
+    n_head: int
+    d_head: int
+    qkv_bias: bool
+
+    # ffn config
+    ffn_type: Literal["dense", "moe"]
+    ffn_hidden: int
+    # moe specific
+    n_experts: int | None
+    top_k: int | None
+    aux_loss_weight: float
+
+    # optimizer config
+    learning_rate: float
+
+    # schedule config
+    warmup_iters: int
+    min_learning_rate: float
+
+    # train config
+    seed: int
+    batch_size: int
+    max_iters: int
+
+    # data config
+
+    # gfx803 constraints
+    dtype: str = "float32"
+    compile: bool = False
+    device: str = "cuda"
+
+    def validate(self) -> None:
+        if self.dtype != "float32":
+            raise ValueError("gfx803 requires dtype='float32'")
+
+        if self.compile:
+            raise ValueError("gfx803 requires compile=False")
+
+        if self.ffn_type == "dense":
+            if self.n_experts is not None or self.top_k is not None:
+                raise ValueError("dense FFN config should not set n_experts or top_k")
+
+        if self.ffn_type == "moe":
+            if self.n_experts is None:
+                raise ValueError("MoE FFN config requires n_experts")
+            if self.top_k is None:
+                raise ValueError("MoE FFN config requires top_k")
+            if self.n_experts < 1:
+                raise ValueError("n_experts must be >= 1")
+            if self.top_k < 1:
+                raise ValueError("top_k must be >= 1")
+            if self.top_k > self.n_experts:
+                raise ValueError("top_k cannot exceed n_experts")
+
+
+def load_config(path: str | Path, overrides: dict[str, Any] | None = None) -> Config:
+    with open(path, "r", encoding="utf-8") as f:
+        raw: dict[str, Any] = yaml.safe_load(f)
+
+    raw.update(overrides or {})
+
+    config = Config(**raw)
+    config.validate()
+    return config

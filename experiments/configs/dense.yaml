@@ -1,0 +1,34 @@
+# configs/dense.yaml
+
+# model config
+vocab_size: 50257
+n_layer: 6
+d_model: 256
+max_seq_len: 256
+dropout: 0.1
+
+# attn config
+n_head: 4
+d_head: 64
+qkv_bias: false
+
+# ffn config
+ffn_type: "dense"
+ffn_hidden: 1024
+n_experts: null
+top_k: null
+aux_loss_weight: 0.0
+
+# optimizer config
+learning_rate: 5.0e-4
+
+# schedule config
+min_learning_rate: 1.0e-4
+warmup_iters: 100
+
+# train config
+seed: 42
+batch_size: 16
+max_iters: 400
+
+# data config
